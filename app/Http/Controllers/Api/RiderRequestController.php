@@ -38,7 +38,7 @@ class RiderRequestController extends Controller
             'status' => 'pending',
         ]);
 
-        $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
+        $frontendUrl = env('FRONTEND_URL', 'https://rodo-frontend-phi.vercel.app');
         $requestUrl = rtrim($frontendUrl, '/') . '/solicitud/' . $publicToken;
 
         return response()->json([

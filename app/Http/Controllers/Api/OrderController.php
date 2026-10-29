@@ -131,7 +131,7 @@ class OrderController extends Controller
             $validated
         );
 
-        $frontendUrl = rtrim((string) env('FRONTEND_URL', 'http://localhost:5173'), '/');
+        $frontendUrl = rtrim((string) env('FRONTEND_URL', 'https://rodo-frontend-phi.vercel.app'), '/');
         $responseData = $order->toArray();
         $responseData['public_token'] = $order->public_token;
         $responseData['ticket_url'] = "{$frontendUrl}/ticket/{$order->public_token}";
