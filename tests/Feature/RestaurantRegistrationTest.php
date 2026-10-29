@@ -103,9 +103,6 @@ class RestaurantRegistrationTest extends TestCase
             'name' => '   pEcOrInOs  RoMa   ',
         ]);
 
-        // When name has internal whitespace differences:
-        // Here with trim it is 'pEcOrInOs  RoMa' vs 'Pecorinos Roma'
-        // Test same name with extra outer padding:
         $response2 = $this->postJson('/api/v1/restaurants', [
             'name' => '   pEcOrInOs RoMa   ',
         ]);
@@ -127,5 +124,77 @@ class RestaurantRegistrationTest extends TestCase
 
         $service = app(RestaurantCodeService::class);
         $service->createRestaurant('tacos el guero');
+    }
+
+    public function test_restaurant_can_login_with_code(): void
+    {
+        $restaurant = Restaurant::create([
+            'name' => 'Pizza Napoli',
+            'code' => '555',
+            'is_active' => true,
+        ]);
+
+        $response = $this->postJson('/api/v1/restaurant/login', [
+            'identifier' => '555',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'id' => $restaurant->id,
+                    'name' => 'Pizza Napoli',
+                    'code' => '555',
+                ],
+            ]);
+
+        $this->assertNotEmpty($response->json('data.token'));
+    }
+
+    public function test_restaurant_can_login_with_name(): void
+    {
+        $restaurant = Restaurant::create([
+            'name' => 'Hamburguesas Max',
+            'code' => '777',
+            'is_active' => true,
+        ]);
+
+        $response = $this->postJson('/api/v1/restaurant/login', [
+            'identifier' => '  hamburguesas max  ',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'id' => $restaurant->id,
+                    'name' => 'Hamburguesas Max',
+                    'code' => '777',
+                ],
+            ]);
+    }
+
+    public function test_restaurant_can_authenticate_me_using_bearer_token(): void
+    {
+        $restaurant = Restaurant::create([
+            'name' => 'Sushi Master',
+            'code' => '888',
+            'is_active' => true,
+        ]);
+
+        $token = $restaurant->createToken('test-token')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->getJson('/api/v1/restaurant/me');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'id' => $restaurant->id,
+                    'name' => 'Sushi Master',
+                    'code' => '888',
+                ],
+            ]);
     }
 }

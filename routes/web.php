@@ -3,8 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\RestaurantSessionController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Middleware\AuthenticateRestaurant;
 
-Route::middleware('auth:restaurant')->group(function () {
+Route::middleware(AuthenticateRestaurant::class)->group(function () {
 
     Route::get('/restaurant/me', [
         RestaurantSessionController::class,

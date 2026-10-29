@@ -45,6 +45,8 @@ class RestaurantController extends Controller
                 $request->session()->regenerate();
             }
 
+            $token = $restaurant->createToken('restaurant-auth')->plainTextToken;
+
             return response()->json([
                 'success' => true,
                 'message' => 'Restaurante registrado correctamente.',
@@ -52,6 +54,7 @@ class RestaurantController extends Controller
                     'id' => $restaurant->id,
                     'name' => $restaurant->name,
                     'code' => $restaurant->code,
+                    'token' => $token,
                 ],
             ], 201);
 
