@@ -51,20 +51,24 @@ class OrderController extends Controller
             $distanceResult = $distanceService->calculateBetweenRestaurantAndDestination($restaurant, $validated);
         }
 
-        // Si el restaurante tiene Tarifa Fija en BD, siempre se coloca esa tarifa fija
+        // Si el restaurante tiene Tarifa Fija en BD, siempre se coloca esa tarifa fija pero también se calcula la distancia para el ticket
         if ($hasFixedFee) {
-            $calculatedKm = ($distanceResult && $distanceResult['success'] && $distanceResult['distance_km'] !== null)
-                ? (float) $distanceResult['distance_km']
-                : 0.0;
+            $hasDistance = $distanceResult && $distanceResult['success'] && $distanceResult['distance_km'] !== null;
+            $calculatedKm = $hasDistance ? (float) $distanceResult['distance_km'] : null;
 
             return response()->json([
-                'success' => true,
+                'success' => $hasDistance,
                 'has_fixed_fee' => true,
                 'fixed_delivery_fee' => $fixedFeeAmount,
                 'delivery_fee' => $fixedFeeAmount,
                 'distance_km' => $calculatedKm,
                 'out_of_coverage' => false,
-                'message' => sprintf('Tarifa fija establecida para %s: $%.2f MXN.', $restaurant->name, $fixedFeeAmount),
+                'origin_coords' => $distanceResult['origin_coords'] ?? null,
+                'destination_coords' => $distanceResult['destination_coords'] ?? null,
+                'source' => $distanceResult['source'] ?? null,
+                'message' => $hasDistance
+                    ? sprintf('Distancia calculada automáticamente: %.1f km · Tarifa fija establecida: $%.2f MXN.', $calculatedKm, $fixedFeeAmount)
+                    : ($distanceResult['message'] ?? sprintf('Tarifa fija establecida para %s: $%.2f MXN.', $restaurant->name, $fixedFeeAmount)),
             ]);
         }
 
@@ -119,11 +123,8 @@ class OrderController extends Controller
 
         $hasFixedFee = $restaurant->fixed_delivery_fee !== null && (float) $restaurant->fixed_delivery_fee > 0;
 
-        // Si el restaurante tiene ubicación registrada en BD (y no tarifa fija), calcular y fijar automáticamente la distancia para evitar modificaciones manuales
-        if (
-            !$hasFixedFee &&
-            !empty($restaurant->location_url)
-        ) {
+        // Si el restaurante tiene ubicación registrada en BD (con o sin tarifa fija), calcular y fijar automáticamente la distancia para el ticket
+        if (!empty($restaurant->location_url)) {
             $autoCalc = $distanceService->calculateBetweenRestaurantAndDestination($restaurant, $request->all());
             if ($autoCalc['success'] && $autoCalc['distance_km'] !== null) {
                 $request->merge(['distance_km' => $autoCalc['distance_km']]);

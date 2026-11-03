@@ -154,19 +154,21 @@ class AdminDashboardTest extends TestCase
                 ],
             ]);
 
-        // 3. Crear pedido con este restaurante: debe colocar SIEMPRE la tarifa fija ($45.00)
+        // 3. Crear pedido con este restaurante: debe colocar SIEMPRE la tarifa fija ($45.00) y además calcular los km para el ticket
         $orderRes = $this->withHeader('X-Restaurant-Code', $restCode)
             ->postJson('/api/v1/orders', [
                 'customer_name' => 'Juan Pérez',
                 'customer_phone' => '4151234567',
                 'street' => 'Av. Independencia 120',
                 'neighborhood' => 'Centro',
+                'map_url' => 'https://www.google.com/maps/place/Destino/@20.9220,-100.7400,17z',
                 'payment_method' => 'Efectivo',
                 'amount_to_collect' => 250,
             ]);
 
         $orderRes->assertStatus(201);
         $this->assertEquals(45.00, (float) $orderRes->json('data.delivery_fee'));
+        $this->assertGreaterThan(0, (float) $orderRes->json('data.distance_km'));
         $this->assertEquals('pending', $orderRes->json('data.status'));
 
         // 4. Marcar el pedido como completado desde el ticket público
