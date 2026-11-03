@@ -167,6 +167,19 @@ class AdminDashboardTest extends TestCase
 
         $orderRes->assertStatus(201);
         $this->assertEquals(45.00, (float) $orderRes->json('data.delivery_fee'));
+        $this->assertEquals('pending', $orderRes->json('data.status'));
+
+        // 4. Marcar el pedido como completado desde el ticket público
+        $publicToken = $orderRes->json('data.public_token');
+        $completeRes = $this->postJson("/api/v1/tickets/{$publicToken}/complete");
+
+        $completeRes->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'status' => 'completed',
+                ],
+            ]);
     }
 }
 

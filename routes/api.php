@@ -18,6 +18,16 @@ Route::prefix('v1')->group(function () {
         'show',
     ])->middleware('throttle:60,1');
 
+    Route::post('/tickets/{token}/complete', [
+        PublicTicketController::class,
+        'complete',
+    ])->middleware('throttle:30,1');
+
+    Route::patch('/tickets/{token}/complete', [
+        PublicTicketController::class,
+        'complete',
+    ])->middleware('throttle:30,1');
+
     Route::get('/rider-requests/{token}', [
         RiderRequestController::class,
         'showPublic',

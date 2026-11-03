@@ -18,6 +18,7 @@ class PublicTicketResource extends JsonResource
             'folio' => $this->folio,
             'status' => $this->status,
             'created_at' => $this->created_at?->toIso8601String(),
+            'delivered_at' => $this->delivered_at?->toIso8601String(),
             'restaurant' => [
                 'name' => $this->restaurant?->name,
                 'code' => $this->restaurant?->code,

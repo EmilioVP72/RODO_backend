@@ -84,7 +84,11 @@ class AdminDashboardController extends Controller
         }
 
         if ($status && $status !== 'all') {
-            $ordersQuery->where('status', $status);
+            if ($status === 'completed') {
+                $ordersQuery->whereIn('status', ['completed', 'delivered']);
+            } else {
+                $ordersQuery->where('status', $status);
+            }
         }
 
         if ($paymentMethod && $paymentMethod !== 'all') {

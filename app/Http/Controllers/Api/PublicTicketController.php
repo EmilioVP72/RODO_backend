@@ -17,7 +17,7 @@ class PublicTicketController extends Controller
     public function show(string $token): JsonResponse
     {
         $order = Order::with([
-            'restaurant:id,name,code',
+            'restaurant:id,name,code,photo_url,location_url,description',
             'careInstructions',
         ])
         ->where('public_token', $token)
@@ -36,6 +36,38 @@ class PublicTicketController extends Controller
         ], 200, [
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
             'Pragma' => 'no-cache',
+        ]);
+    }
+
+    /**
+     * Marca el pedido asociado al ticket como completado.
+     */
+    public function complete(string $token): JsonResponse
+    {
+        $order = Order::with([
+            'restaurant:id,name,code,photo_url,location_url,description',
+            'careInstructions',
+        ])
+        ->where('public_token', $token)
+        ->first();
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ticket no encontrado.',
+            ], 404);
+        }
+
+        if ($order->status !== 'completed') {
+            $order->status = 'completed';
+            $order->delivered_at = now();
+            $order->save();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'El pedido ha sido marcado como completado.',
+            'data' => new PublicTicketResource($order),
         ]);
     }
 }
