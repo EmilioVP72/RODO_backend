@@ -23,6 +23,9 @@ class PublicRiderRequestResource extends JsonResource
             'restaurant' => [
                 'name' => $this->restaurant?->name,
                 'code' => $this->restaurant?->code,
+                'photo_url' => $this->restaurant?->photo_url,
+                'location_url' => $this->restaurant?->location_url,
+                'description' => $this->restaurant?->description,
             ],
         ];
     }

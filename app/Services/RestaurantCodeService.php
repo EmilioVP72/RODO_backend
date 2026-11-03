@@ -8,9 +8,9 @@ use RuntimeException;
 
 class RestaurantCodeService
 {
-    private const MAX_CODES = 1000;
+    private const MAX_CODES = 999;
 
-    public function createRestaurant(string $name): Restaurant
+    public function createRestaurant(string $name, array $extraAttributes = []): Restaurant
     {
         $name = trim($name);
         $normalized = mb_strtolower($name);
@@ -28,7 +28,7 @@ class RestaurantCodeService
         for ($attempt = 0; $attempt < 30; $attempt++) {
 
             $code = str_pad(
-                (string) random_int(0, 999),
+                (string) random_int(1, 999),
                 3,
                 '0',
                 STR_PAD_LEFT
@@ -39,11 +39,11 @@ class RestaurantCodeService
             }
 
             try {
-                return Restaurant::create([
+                return Restaurant::create(array_merge([
                     'name' => $name,
                     'code' => $code,
                     'is_active' => true,
-                ]);
+                ], $extraAttributes));
             } catch (UniqueConstraintViolationException $e) {
                 if (Restaurant::whereRaw('LOWER(TRIM(name)) = ?', [$normalized])->exists()) {
                     throw new \InvalidArgumentException('Ya existe un restaurante registrado con este nombre.');
@@ -52,7 +52,7 @@ class RestaurantCodeService
             }
         }
 
-        $codes = range(0, 999);
+        $codes = range(1, 999);
         shuffle($codes);
 
         foreach ($codes as $number) {
@@ -68,11 +68,11 @@ class RestaurantCodeService
             }
 
             try {
-                return Restaurant::create([
+                return Restaurant::create(array_merge([
                     'name' => $name,
                     'code' => $code,
                     'is_active' => true,
-                ]);
+                ], $extraAttributes));
             } catch (UniqueConstraintViolationException $e) {
                 if (Restaurant::whereRaw('LOWER(TRIM(name)) = ?', [$normalized])->exists()) {
                     throw new \InvalidArgumentException('Ya existe un restaurante registrado con este nombre.');
