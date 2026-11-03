@@ -80,6 +80,7 @@ class RestaurantSessionController extends Controller
                 'photo_url' => $restaurant->photo_url,
                 'location_url' => $restaurant->location_url,
                 'description' => $restaurant->description,
+                'fixed_delivery_fee' => $restaurant->fixed_delivery_fee !== null ? round((float) $restaurant->fixed_delivery_fee, 2) : null,
                 'token' => $token,
             ],
         ]);
@@ -108,6 +109,7 @@ class RestaurantSessionController extends Controller
                 'photo_url' => $restaurant->photo_url,
                 'location_url' => $restaurant->location_url,
                 'description' => $restaurant->description,
+                'fixed_delivery_fee' => $restaurant->fixed_delivery_fee !== null ? round((float) $restaurant->fixed_delivery_fee, 2) : null,
             ],
         ]);
     }

@@ -16,11 +16,13 @@ class Restaurant extends Authenticatable
         'photo_url',
         'location_url',
         'description',
+        'fixed_delivery_fee',
         'is_active',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'fixed_delivery_fee' => 'float',
     ];
 
     public function orders(): HasMany

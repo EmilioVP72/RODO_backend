@@ -45,6 +45,11 @@ Route::prefix('v1')->group(function () {
             'logout',
         ]);
 
+        Route::post('/orders/calculate-distance', [
+            OrderController::class,
+            'calculateDistance',
+        ])->middleware('throttle:60,1');
+
         Route::post('/orders', [
             OrderController::class,
             'store',

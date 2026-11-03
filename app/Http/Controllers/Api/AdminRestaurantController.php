@@ -57,6 +57,7 @@ class AdminRestaurantController extends Controller
                 'photo_url' => $r->photo_url,
                 'location_url' => $r->location_url,
                 'description' => $r->description,
+                'fixed_delivery_fee' => $r->fixed_delivery_fee !== null ? round((float) $r->fixed_delivery_fee, 2) : null,
                 'is_active' => (bool) $r->is_active,
                 'orders_count' => (int) ($r->orders_count ?? 0),
                 'rider_requests_count' => (int) ($r->rider_requests_count ?? 0),
@@ -94,6 +95,7 @@ class AdminRestaurantController extends Controller
             'photo_url' => ['nullable', 'string'],
             'location_url' => ['nullable', 'string', 'max:2000'],
             'description' => ['nullable', 'string', 'max:2000'],
+            'fixed_delivery_fee' => ['nullable', 'numeric', 'min:0', 'max:5000'],
             'is_active' => ['nullable', 'boolean'],
         ], [
             'name.required' => 'El nombre del restaurante es obligatorio.',
@@ -102,10 +104,15 @@ class AdminRestaurantController extends Controller
         ]);
 
         try {
+            $fixedFee = isset($validated['fixed_delivery_fee']) && $validated['fixed_delivery_fee'] !== '' && (float) $validated['fixed_delivery_fee'] > 0
+                ? round((float) $validated['fixed_delivery_fee'], 2)
+                : null;
+
             $restaurant = $codeService->createRestaurant(trim($validated['name']), [
                 'photo_url' => $validated['photo_url'] ?? null,
                 'location_url' => !empty($validated['location_url']) ? trim($validated['location_url']) : null,
                 'description' => !empty($validated['description']) ? trim($validated['description']) : null,
+                'fixed_delivery_fee' => $fixedFee,
                 'is_active' => $validated['is_active'] ?? true,
             ]);
 
@@ -119,6 +126,7 @@ class AdminRestaurantController extends Controller
                     'photo_url' => $restaurant->photo_url,
                     'location_url' => $restaurant->location_url,
                     'description' => $restaurant->description,
+                    'fixed_delivery_fee' => $restaurant->fixed_delivery_fee !== null ? round((float) $restaurant->fixed_delivery_fee, 2) : null,
                     'is_active' => (bool) $restaurant->is_active,
                     'orders_count' => 0,
                     'rider_requests_count' => 0,
@@ -161,6 +169,7 @@ class AdminRestaurantController extends Controller
             'photo_url' => ['nullable', 'string'],
             'location_url' => ['nullable', 'string', 'max:2000'],
             'description' => ['nullable', 'string', 'max:2000'],
+            'fixed_delivery_fee' => ['nullable', 'numeric', 'min:0', 'max:5000'],
             'is_active' => ['sometimes', 'boolean'],
         ], [
             'name.required' => 'El nombre del restaurante es obligatorio.',
@@ -180,6 +189,12 @@ class AdminRestaurantController extends Controller
         if (array_key_exists('description', $validated)) {
             $restaurant->description = !empty($validated['description']) ? trim($validated['description']) : null;
         }
+        if (array_key_exists('fixed_delivery_fee', $validated)) {
+            $val = $validated['fixed_delivery_fee'];
+            $restaurant->fixed_delivery_fee = ($val !== null && $val !== '' && (float) $val > 0)
+                ? round((float) $val, 2)
+                : null;
+        }
         if (array_key_exists('is_active', $validated)) {
             $restaurant->is_active = (bool) $validated['is_active'];
         }
@@ -198,6 +213,7 @@ class AdminRestaurantController extends Controller
                 'photo_url' => $restaurant->photo_url,
                 'location_url' => $restaurant->location_url,
                 'description' => $restaurant->description,
+                'fixed_delivery_fee' => $restaurant->fixed_delivery_fee !== null ? round((float) $restaurant->fixed_delivery_fee, 2) : null,
                 'is_active' => (bool) $restaurant->is_active,
                 'orders_count' => (int) ($restaurant->orders_count ?? 0),
                 'rider_requests_count' => (int) ($restaurant->rider_requests_count ?? 0),
@@ -232,3 +248,4 @@ class AdminRestaurantController extends Controller
         ]);
     }
 }
+

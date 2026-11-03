@@ -17,7 +17,16 @@ class OrderService
             );
         }
 
-        return min(50, 40 + (2 * $distanceKm));
+        return round(min(50, 40 + (2 * $distanceKm)), 2);
+    }
+
+    public function calculateFeeForRestaurant(Restaurant $restaurant, float $distanceKm): float
+    {
+        if ($restaurant->fixed_delivery_fee !== null && (float) $restaurant->fixed_delivery_fee > 0) {
+            return round((float) $restaurant->fixed_delivery_fee, 2);
+        }
+
+        return $this->calculateDeliveryFee($distanceKm);
     }
 
     public function createOrder(
@@ -25,12 +34,17 @@ class OrderService
         array $data
     ): Order {
         return DB::transaction(function () use ($restaurant, $data) {
+            $hasFixedFee = $restaurant->fixed_delivery_fee !== null && (float) $restaurant->fixed_delivery_fee > 0;
 
-            $distanceKm = (float) $data['distance_km'];
+            $distanceKm = isset($data['distance_km']) && $data['distance_km'] !== ''
+                ? (float) $data['distance_km']
+                : 0.0;
 
-            $deliveryFee = $this->calculateDeliveryFee(
-                $distanceKm
-            );
+            if ($hasFixedFee) {
+                $deliveryFee = round((float) $restaurant->fixed_delivery_fee, 2);
+            } else {
+                $deliveryFee = $this->calculateDeliveryFee($distanceKm);
+            }
 
             $order = Order::create([
                 'restaurant_id' => $restaurant->id,
@@ -71,7 +85,7 @@ class OrderService
             }
 
             return $order->load([
-                'restaurant:id,name,code',
+                'restaurant:id,name,code,fixed_delivery_fee,location_url',
                 'careInstructions',
             ]);
         });

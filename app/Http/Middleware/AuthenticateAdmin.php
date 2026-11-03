@@ -69,3 +69,4 @@ class AuthenticateAdmin
         ], 401);
     }
 }
+
