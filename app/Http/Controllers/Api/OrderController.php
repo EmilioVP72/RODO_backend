@@ -119,10 +119,9 @@ class OrderController extends Controller
 
         $hasFixedFee = $restaurant->fixed_delivery_fee !== null && (float) $restaurant->fixed_delivery_fee > 0;
 
-        // Si no enviaron distance_km y el restaurante tiene ubicación en BD (y no tarifa fija), intentar calcularla automáticamente
+        // Si el restaurante tiene ubicación registrada en BD (y no tarifa fija), calcular y fijar automáticamente la distancia para evitar modificaciones manuales
         if (
             !$hasFixedFee &&
-            ($request->input('distance_km') === null || $request->input('distance_km') === '') &&
             !empty($restaurant->location_url)
         ) {
             $autoCalc = $distanceService->calculateBetweenRestaurantAndDestination($restaurant, $request->all());
