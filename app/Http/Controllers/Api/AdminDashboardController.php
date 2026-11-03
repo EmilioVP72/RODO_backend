@@ -126,6 +126,8 @@ class AdminDashboardController extends Controller
         $avgDistanceKm = $totalOrders > 0 ? round($totalDistanceKm / $totalOrders, 2) : 0.0;
         $ordersReadyCount = $orders->where('is_ready', true)->count();
         $ordersNeedingChange = $orders->where('needs_change', true)->count();
+        $ordersCompletedCount = $orders->whereIn('status', ['completed', 'delivered'])->count();
+        $ordersPendingCount = $orders->whereNotIn('status', ['completed', 'delivered', 'cancelled'])->count();
 
         $ordersGrowthPct = $prevOrdersCount > 0
             ? round((($totalOrders - $prevOrdersCount) / $prevOrdersCount) * 100, 1)
@@ -270,7 +272,7 @@ class AdminDashboardController extends Controller
 
         // 7. Últimos pedidos recientes
         $frontendUrl = rtrim((string) env('FRONTEND_URL', 'https://rodo-frontend-phi.vercel.app'), '/');
-        $recentOrders = $orders->take(12)->map(function ($order) use ($frontendUrl) {
+        $recentOrders = $orders->take(50)->map(function ($order) use ($frontendUrl) {
             return [
                 'id' => $order->id,
                 'folio' => $order->folio,
@@ -286,7 +288,8 @@ class AdminDashboardController extends Controller
                 'amount_to_collect' => $order->amount_to_collect !== null ? (float) $order->amount_to_collect : null,
                 'needs_change' => (bool) $order->needs_change,
                 'is_ready' => (bool) $order->is_ready,
-                'status' => $order->status,
+                'status' => $order->status ?: 'pending',
+                'delivered_at' => $order->delivered_at?->toIso8601String(),
                 'created_at' => $order->created_at?->toIso8601String(),
                 'restaurant' => [
                     'id' => $order->restaurant?->id,
@@ -312,6 +315,8 @@ class AdminDashboardController extends Controller
                     'avg_distance_km' => $avgDistanceKm,
                     'orders_ready_count' => $ordersReadyCount,
                     'orders_needing_change' => $ordersNeedingChange,
+                    'orders_completed_count' => $ordersCompletedCount,
+                    'orders_pending_count' => $ordersPendingCount,
                     'total_restaurants' => $totalRestaurants,
                     'active_restaurants' => $activeRestaurants,
                     'restaurants_with_orders' => $restaurantsWithOrders,
@@ -335,6 +340,9 @@ class AdminDashboardController extends Controller
                     'is_active' => (bool) $r->is_active,
                 ])->values()->all(),
             ],
+        ], 200, [
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
         ]);
     }
 }
