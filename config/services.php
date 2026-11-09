@@ -35,4 +35,22 @@ return [
         ],
     ],
 
+    'routing' => [
+        'provider' => env('ROUTING_PROVIDER', 'openrouteservice'),
+        'allow_osrm_when_unconfigured' => (bool) env('ROUTING_ALLOW_OSRM_FALLBACK', true),
+    ],
+
+    'openrouteservice' => [
+        'key' => env('OPENROUTESERVICE_API_KEY', ''),
+        'base_url' => env('OPENROUTESERVICE_BASE_URL', 'https://api.openrouteservice.org'),
+        'profile' => env('OPENROUTESERVICE_PROFILE', 'driving-car'),
+        'timeout' => (int) env('OPENROUTESERVICE_TIMEOUT', 6),
+    ],
+
+    'osrm' => [
+        'base_url' => env('OSRM_BASE_URL', 'https://router.project-osrm.org'),
+        'profile' => env('OSRM_PROFILE', 'driving'),
+        'timeout' => (int) env('OSRM_TIMEOUT', 5),
+    ],
+
 ];

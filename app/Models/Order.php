@@ -16,7 +16,14 @@ class Order extends Model
         'neighborhood',
         'address_reference',
         'map_url',
+        'origin_address',
+        'destination_address',
+        'origin_lat',
+        'origin_lng',
+        'destination_lat',
+        'destination_lng',
         'distance_km',
+        'duration_minutes',
         'delivery_fee',
         'payment_method',
         'amount_to_collect',
@@ -37,7 +44,12 @@ class Order extends Model
     ];
 
     protected $casts = [
+        'origin_lat' => 'float',
+        'origin_lng' => 'float',
+        'destination_lat' => 'float',
+        'destination_lng' => 'float',
         'distance_km' => 'decimal:2',
+        'duration_minutes' => 'float',
         'delivery_fee' => 'decimal:2',
         'amount_to_collect' => 'decimal:2',
         'needs_change' => 'boolean',

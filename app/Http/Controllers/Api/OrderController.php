@@ -58,6 +58,8 @@ class OrderController extends Controller
                 'fixed_delivery_fee' => $fixedFeeAmount,
                 'delivery_fee' => $fixedFeeAmount,
                 'distance_km' => $calculatedKm,
+                'duration_minutes' => $distanceResult['duration_minutes'] ?? null,
+                'geometry' => $distanceResult['geometry'] ?? null,
                 'out_of_coverage' => false,
                 'origin_coords' => $distanceResult['origin_coords'] ?? null,
                 'destination_coords' => $distanceResult['destination_coords'] ?? null,
@@ -75,7 +77,11 @@ class OrderController extends Controller
                 'fixed_delivery_fee' => null,
                 'delivery_fee' => null,
                 'distance_km' => null,
+                'duration_minutes' => null,
+                'geometry' => null,
                 'out_of_coverage' => false,
+                'origin_coords' => $distanceResult['origin_coords'] ?? null,
+                'destination_coords' => null,
                 'message' => $distanceResult['message'] ?? 'No fue posible calcular la distancia automáticamente.',
             ], 200);
         }
@@ -89,6 +95,8 @@ class OrderController extends Controller
             'has_fixed_fee' => false,
             'fixed_delivery_fee' => null,
             'distance_km' => $km,
+            'duration_minutes' => $distanceResult['duration_minutes'] ?? null,
+            'geometry' => $distanceResult['geometry'] ?? null,
             'delivery_fee' => $fee,
             'out_of_coverage' => $outOfCoverage,
             'origin_coords' => $distanceResult['origin_coords'],
@@ -119,8 +127,11 @@ class OrderController extends Controller
 
         $hasFixedFee = $restaurant->fixed_delivery_fee !== null && (float) $restaurant->fixed_delivery_fee > 0;
 
-        // Si el restaurante tiene ubicación registrada en BD (con o sin tarifa fija), calcular y fijar automáticamente la distancia para el ticket
-        if (!empty($restaurant->location_url)) {
+        // Si el restaurante tiene ubicación registrada en BD (con o sin tarifa fija) y no viene una distancia ya calculada por mapa, calcular automáticamente
+        $incomingDistance = $request->input('distance_km');
+        $hasValidIncomingDistance = $incomingDistance !== null && $incomingDistance !== '' && is_numeric($incomingDistance) && (float) $incomingDistance > 0;
+
+        if (!empty($restaurant->location_url) && !$hasValidIncomingDistance) {
             $autoCalc = $distanceService->calculateBetweenRestaurantAndDestination($restaurant, $request->all());
             if ($autoCalc['success'] && $autoCalc['distance_km'] !== null) {
                 $request->merge(['distance_km' => $autoCalc['distance_km']]);
@@ -163,9 +174,52 @@ class OrderController extends Controller
                 'max:2048',
             ],
 
+            'origin_address' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+            'destination_address' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+            'origin_lat' => [
+                'nullable',
+                'numeric',
+                'between:-90,90',
+            ],
+
+            'origin_lng' => [
+                'nullable',
+                'numeric',
+                'between:-180,180',
+            ],
+
+            'destination_lat' => [
+                'nullable',
+                'numeric',
+                'between:-90,90',
+            ],
+
+            'destination_lng' => [
+                'nullable',
+                'numeric',
+                'between:-180,180',
+            ],
+
             'distance_km' => $hasFixedFee
                 ? ['nullable', 'numeric', 'min:0', 'max:50']
                 : ['required', 'numeric', 'between:0,5'],
+
+            'duration_minutes' => [
+                'nullable',
+                'numeric',
+                'min:0',
+                'max:1000',
+            ],
 
             'payment_method' => [
                 'nullable',

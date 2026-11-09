@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Contracts\RoutingProviderInterface;
 use App\Models\Restaurant;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -92,12 +93,14 @@ class RouteDistanceService
             ];
         }
 
-        // 3. Calcular distancia real por calles (OSRM Driving API con fallback Haversine urbano)
+        // 3. Calcular distancia real por calles (OpenRouteService / OSRM)
         $routeResult = $this->calculateDrivingDistanceKm($originCoords, $destinationCoords);
 
         return [
             'success' => true,
             'distance_km' => $routeResult['distance_km'],
+            'duration_minutes' => $routeResult['duration_minutes'] ?? null,
+            'geometry' => $routeResult['geometry'] ?? null,
             'origin_coords' => $originCoords,
             'destination_coords' => $destinationCoords,
             'source' => $resolutionSource . ':' . $routeResult['method'],
@@ -501,14 +504,29 @@ class RouteDistanceService
     }
 
     /**
-     * Calcula la distancia de manejo por calles usando OSRM, o Haversine * 1.30 como respaldo.
+     * Calcula la distancia de manejo por calles usando RoutingProviderInterface (OpenRouteService / OSRM).
      *
      * @param array{lat: float, lng: float} $origin
      * @param array{lat: float, lng: float} $destination
-     * @return array{distance_km: float, method: string}
+     * @return array{distance_km: float, duration_minutes?: float|null, geometry?: array|null, method: string}
      */
     public function calculateDrivingDistanceKm(array $origin, array $destination): array
     {
+        try {
+            /** @var RoutingProviderInterface $routingService */
+            $routingService = app(RoutingProviderInterface::class);
+            $route = $routingService->calculateRoute($origin, $destination);
+
+            return [
+                'distance_km' => round((float) $route['distance_km'], 1),
+                'duration_minutes' => $route['duration_minutes'] ?? null,
+                'geometry' => $route['geometry'] ?? null,
+                'method' => $route['provider'] ?? 'openrouteservice',
+            ];
+        } catch (\Throwable $e) {
+            // Continuar con consulta OSRM directa si el proveedor primario falló
+        }
+
         try {
             $url = sprintf(
                 'https://router.project-osrm.org/route/v1/driving/%.6f,%.6f;%.6f,%.6f',
@@ -523,21 +541,25 @@ class RouteDistanceService
             ])
                 ->timeout(4)
                 ->get($url, [
-                    'overview' => 'false',
+                    'overview' => 'full',
+                    'geometries' => 'geojson',
                 ]);
 
             if ($response->successful()) {
                 $routes = $response->json('routes');
                 if (is_array($routes) && isset($routes[0]['distance'])) {
                     $meters = (float) $routes[0]['distance'];
+                    $seconds = (float) ($routes[0]['duration'] ?? 0);
                     return [
                         'distance_km' => round($meters / 1000, 1),
+                        'duration_minutes' => round($seconds / 60, 1),
+                        'geometry' => $routes[0]['geometry'] ?? null,
                         'method' => 'osrm_driving',
                     ];
                 }
             }
         } catch (\Throwable $e) {
-            // Fallback a cálculo geométrico con factor de ruta urbana
+            // Fallback en caso de fallo de red
         }
 
         $straightKm = $this->haversineKm($origin, $destination);
@@ -545,6 +567,14 @@ class RouteDistanceService
 
         return [
             'distance_km' => $urbanRoadKm,
+            'duration_minutes' => round(($urbanRoadKm / 25) * 60, 1),
+            'geometry' => [
+                'type' => 'LineString',
+                'coordinates' => [
+                    [$origin['lng'], $origin['lat']],
+                    [$destination['lng'], $destination['lat']],
+                ],
+            ],
             'method' => 'haversine_urban',
         ];
     }

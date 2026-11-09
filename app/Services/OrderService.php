@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Order;
 use App\Models\Restaurant;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class OrderService
@@ -46,7 +47,7 @@ class OrderService
                 $deliveryFee = $this->calculateDeliveryFee($distanceKm);
             }
 
-            $order = Order::create([
+            $orderAttributes = [
                 'restaurant_id' => $restaurant->id,
 
                 // Folio temporal único basado en UUID.
@@ -76,7 +77,30 @@ class OrderService
                 'is_ready' => $data['is_ready'] ?? false,
 
                 'status' => 'pending',
-            ]);
+            ];
+
+            if (Schema::hasColumn('orders', 'origin_lat')) {
+                $orderAttributes['origin_lat'] = isset($data['origin_lat']) && is_numeric($data['origin_lat'])
+                    ? (float) $data['origin_lat']
+                    : null;
+                $orderAttributes['origin_lng'] = isset($data['origin_lng']) && is_numeric($data['origin_lng'])
+                    ? (float) $data['origin_lng']
+                    : null;
+                $orderAttributes['destination_lat'] = isset($data['destination_lat']) && is_numeric($data['destination_lat'])
+                    ? (float) $data['destination_lat']
+                    : null;
+                $orderAttributes['destination_lng'] = isset($data['destination_lng']) && is_numeric($data['destination_lng'])
+                    ? (float) $data['destination_lng']
+                    : null;
+                $orderAttributes['origin_address'] = $data['origin_address'] ?? null;
+                $orderAttributes['destination_address'] = $data['destination_address']
+                    ?? trim(($data['street'] ?? '') . ', ' . ($data['neighborhood'] ?? ''), ', ');
+                $orderAttributes['duration_minutes'] = isset($data['duration_minutes']) && is_numeric($data['duration_minutes'])
+                    ? round((float) $data['duration_minutes'], 2)
+                    : null;
+            }
+
+            $order = Order::create($orderAttributes);
 
             foreach ($data['care_instructions'] ?? [] as $instruction) {
                 $order->careInstructions()->create([

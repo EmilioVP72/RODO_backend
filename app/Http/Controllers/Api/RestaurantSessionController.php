@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Middleware\AuthenticateAdmin;
 use App\Models\AppSetting;
 use App\Models\Restaurant;
+use App\Services\RouteDistanceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -71,6 +72,7 @@ class RestaurantSessionController extends Controller
         }
 
         $token = $restaurant->createToken('restaurant-auth')->plainTextToken;
+        $originCoords = $this->resolveRestaurantOriginCoords($restaurant);
 
         return response()->json([
             'success' => true,
@@ -82,6 +84,9 @@ class RestaurantSessionController extends Controller
                 'code' => $restaurant->code,
                 'photo_url' => $restaurant->photo_url,
                 'location_url' => $restaurant->location_url,
+                'latitude' => $originCoords['lat'] ?? null,
+                'longitude' => $originCoords['lng'] ?? null,
+                'origin_coords' => $originCoords,
                 'description' => $restaurant->description,
                 'fixed_delivery_fee' => $restaurant->fixed_delivery_fee !== null ? round((float) $restaurant->fixed_delivery_fee, 2) : null,
                 'show_daily_kpis' => (bool) ($restaurant->show_daily_kpis ?? false),
@@ -108,6 +113,8 @@ class RestaurantSessionController extends Controller
             ], 401);
         }
 
+        $originCoords = $this->resolveRestaurantOriginCoords($restaurant);
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -116,6 +123,9 @@ class RestaurantSessionController extends Controller
                 'code' => $restaurant->code,
                 'photo_url' => $restaurant->photo_url,
                 'location_url' => $restaurant->location_url,
+                'latitude' => $originCoords['lat'] ?? null,
+                'longitude' => $originCoords['lng'] ?? null,
+                'origin_coords' => $originCoords,
                 'description' => $restaurant->description,
                 'fixed_delivery_fee' => $restaurant->fixed_delivery_fee !== null ? round((float) $restaurant->fixed_delivery_fee, 2) : null,
                 'show_daily_kpis' => (bool) ($restaurant->show_daily_kpis ?? false),
@@ -123,6 +133,35 @@ class RestaurantSessionController extends Controller
                 'branding' => AppSetting::getBranding(),
             ],
         ]);
+    }
+
+    /**
+     * Resuelve las coordenadas del establecimiento a partir de latitude/longitude o location_url.
+     *
+     * @return array{lat: float, lng: float}|null
+     */
+    protected function resolveRestaurantOriginCoords(Restaurant $restaurant): ?array
+    {
+        if ($restaurant->latitude !== null && $restaurant->longitude !== null) {
+            return [
+                'lat' => round((float) $restaurant->latitude, 6),
+                'lng' => round((float) $restaurant->longitude, 6),
+            ];
+        }
+
+        if (!empty($restaurant->location_url)) {
+            try {
+                $distanceService = app(RouteDistanceService::class);
+                $coords = $distanceService->extractCoordsFromString((string) $restaurant->location_url);
+                if ($coords) {
+                    return $coords;
+                }
+            } catch (\Throwable $e) {
+                // Silenciar si falla extracción rápida
+            }
+        }
+
+        return null;
     }
 
     /**

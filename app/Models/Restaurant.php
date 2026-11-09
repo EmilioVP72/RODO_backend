@@ -15,6 +15,8 @@ class Restaurant extends Authenticatable
         'code',
         'photo_url',
         'location_url',
+        'latitude',
+        'longitude',
         'description',
         'fixed_delivery_fee',
         'show_daily_kpis',
@@ -25,6 +27,8 @@ class Restaurant extends Authenticatable
         'is_active' => 'boolean',
         'show_daily_kpis' => 'boolean',
         'fixed_delivery_fee' => 'float',
+        'latitude' => 'float',
+        'longitude' => 'float',
     ];
 
     public function orders(): HasMany

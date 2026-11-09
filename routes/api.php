@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\RestaurantSessionController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PublicTicketController;
 use App\Http\Controllers\Api\RiderRequestController;
+use App\Http\Controllers\Api\RouteController;
 use App\Http\Middleware\AuthenticateAdmin;
 use App\Http\Middleware\AuthenticateRestaurant;
 
@@ -68,6 +69,11 @@ Route::prefix('v1')->group(function () {
         Route::post('/orders/calculate-distance', [
             OrderController::class,
             'calculateDistance',
+        ])->middleware('throttle:60,1');
+
+        Route::post('/routes/calculate', [
+            RouteController::class,
+            'calculate',
         ])->middleware('throttle:60,1');
 
         Route::post('/orders', [
