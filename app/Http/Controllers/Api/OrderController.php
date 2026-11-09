@@ -8,6 +8,7 @@ use App\Services\OrderService;
 use App\Services\RouteDistanceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
@@ -265,18 +266,78 @@ class OrderController extends Controller
             ], 403);
         }
 
-        $orders = $restaurant->orders()
-            ->with([
-                'careInstructions',
-                'attachments',
-            ])
+        // Ventana operativa estrictamente del día actual (Horario de México)
+        // Al día siguiente a las 00:00 hrs la vista del restaurante inicia limpia,
+        // mientras que todos los pedidos históricos permanecen intactos en la BD para el Admin.
+        $nowMx = Carbon::now('America/Mexico_City');
+        $startOfDayUtc = $nowMx->copy()->startOfDay()->setTimezone(config('app.timezone', 'UTC'));
+        $endOfDayUtc = $nowMx->copy()->endOfDay()->setTimezone(config('app.timezone', 'UTC'));
+
+        $frontendUrl = rtrim((string) env('FRONTEND_URL', 'https://rodo-frontend-phi.vercel.app'), '/');
+
+        $ordersCollection = $restaurant->orders()
+            ->with(['careInstructions'])
+            ->whereBetween('created_at', [$startOfDayUtc, $endOfDayUtc])
             ->orderByDesc('created_at')
-            ->paginate(15);
+            ->get();
+
+        $formattedOrders = $ordersCollection->map(function ($order) use ($frontendUrl, $restaurant) {
+            return [
+                'id' => $order->id,
+                'folio' => $order->folio,
+                'public_token' => $order->public_token,
+                'ticket_url' => "{$frontendUrl}/ticket/{$order->public_token}",
+                'status' => $order->status ?? 'pending',
+                'customer_name' => $order->customer_name,
+                'customer_phone' => $order->customer_phone,
+                'street' => $order->street,
+                'neighborhood' => $order->neighborhood,
+                'address_reference' => $order->address_reference,
+                'map_url' => $order->map_url,
+                'distance_km' => $order->distance_km !== null ? round((float) $order->distance_km, 2) : 0.0,
+                'delivery_fee' => round((float) ($order->delivery_fee ?? 0), 2),
+                'payment_method' => $order->payment_method,
+                'amount_to_collect' => $order->amount_to_collect !== null ? round((float) $order->amount_to_collect, 2) : null,
+                'needs_change' => (bool) $order->needs_change,
+                'change_from' => $order->change_from,
+                'description' => $order->description,
+                'comments' => $order->comments,
+                'is_ready' => (bool) $order->is_ready,
+                'care_instructions' => $order->careInstructions
+                    ? $order->careInstructions->pluck('instruction')->values()->all()
+                    : [],
+                'restaurant' => [
+                    'id' => $restaurant->id,
+                    'name' => $restaurant->name,
+                    'code' => $restaurant->code,
+                ],
+                'created_at' => $order->created_at?->toIso8601String(),
+                'delivered_at' => $order->delivered_at?->toIso8601String(),
+            ];
+        })->values();
+
+        $completedCount = $formattedOrders->filter(fn ($o) => in_array($o['status'], ['completed', 'delivered'], true))->count();
+        $totalOrders = $formattedOrders->count();
 
         return response()->json([
             'success' => true,
-            'message' => 'Pedidos obtenidos correctamente.',
-            'data' => $orders,
+            'message' => 'Pedidos del día obtenidos correctamente.',
+            'data' => [
+                'date' => $nowMx->toDateString(),
+                'restaurant' => [
+                    'id' => $restaurant->id,
+                    'name' => $restaurant->name,
+                    'code' => $restaurant->code,
+                ],
+                'summary' => [
+                    'total_orders' => $totalOrders,
+                    'completed_orders' => $completedCount,
+                    'pending_orders' => max(0, $totalOrders - $completedCount),
+                    'total_delivery_fees' => round((float) $formattedOrders->sum('delivery_fee'), 2),
+                    'total_amount_to_collect' => round((float) $formattedOrders->sum(fn ($o) => (float) ($o['amount_to_collect'] ?? 0)), 2),
+                ],
+                'orders' => $formattedOrders,
+            ],
         ]);
     }
 }
