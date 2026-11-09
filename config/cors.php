@@ -8,10 +8,15 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => array_filter(array_map('trim', explode(',', (string) env('CORS_ALLOWED_ORIGINS', env('FRONTEND_URL', 'https://rodo-frontend-phi.vercel.app'))))),
+    'allowed_origins' => array_filter(array_map('trim', explode(',', (string) env(
+        'CORS_ALLOWED_ORIGINS',
+        env('FRONTEND_URL', 'http://localhost:5173,http://127.0.0.1:5173,https://rodo-frontend-phi.vercel.app')
+    )))),
 
     'allowed_origins_patterns' => [
         '#^https?://.*\.vercel\.app$#',
+        '#^https?://localhost(:\d+)?$#',
+        '#^https?://127\.0\.0\.1(:\d+)?$#',
     ],
 
     'allowed_headers' => ['*'],
