@@ -13,11 +13,6 @@ use Illuminate\Validation\Rule;
 
 class OrderController extends Controller
 {
-    /**
-     * Calcula automáticamente la distancia y tarifa de entrega entre la ubicación
-     * del restaurante (registrada en BD por el Admin) y el destino del pedido,
-     * o aplica la tarifa fija del restaurante si tiene una asignada en BD.
-     */
     public function calculateDistance(
         Request $request,
         RouteDistanceService $distanceService,

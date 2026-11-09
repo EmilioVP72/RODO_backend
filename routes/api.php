@@ -3,7 +3,6 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\AdminRestaurantController;
-use App\Http\Controllers\Api\RestaurantController;
 use App\Http\Controllers\Api\RestaurantSessionController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PublicTicketController;
@@ -32,11 +31,6 @@ Route::prefix('v1')->group(function () {
         RiderRequestController::class,
         'showPublic',
     ])->middleware('throttle:60,1');
-
-    Route::post('/restaurants', [
-        RestaurantController::class,
-        'store',
-    ])->middleware('throttle:5,1');
 
     Route::post('/restaurant/login', [
         RestaurantSessionController::class,

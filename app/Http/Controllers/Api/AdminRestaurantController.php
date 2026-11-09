@@ -118,7 +118,7 @@ class AdminRestaurantController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Restaurante creado correctamente.',
+                'message' => "Restaurante creado correctamente con el código #{$restaurant->code}.",
                 'data' => [
                     'id' => $restaurant->id,
                     'name' => $restaurant->name,
@@ -141,6 +141,11 @@ class AdminRestaurantController extends Controller
                 'message' => $e->getMessage(),
                 'errors' => ['name' => [$e->getMessage()]],
             ], 422);
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No hay códigos de 3 dígitos disponibles en este momento.',
+            ], 503);
         }
     }
 
