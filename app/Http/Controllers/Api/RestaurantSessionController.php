@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Middleware\AuthenticateAdmin;
+use App\Models\AppSetting;
 use App\Models\Restaurant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +17,8 @@ class RestaurantSessionController extends Controller
      */
     public function login(Request $request)
     {
+        AppSetting::ensureSchemaExists();
+
         $validated = $request->validate([
             'identifier' => ['required', 'string', 'min:2', 'max:150'],
         ], [
@@ -81,6 +84,8 @@ class RestaurantSessionController extends Controller
                 'location_url' => $restaurant->location_url,
                 'description' => $restaurant->description,
                 'fixed_delivery_fee' => $restaurant->fixed_delivery_fee !== null ? round((float) $restaurant->fixed_delivery_fee, 2) : null,
+                'show_daily_kpis' => (bool) ($restaurant->show_daily_kpis ?? false),
+                'branding' => AppSetting::getBranding(),
                 'token' => $token,
             ],
         ]);
@@ -91,6 +96,8 @@ class RestaurantSessionController extends Controller
      */
     public function me(Request $request)
     {
+        AppSetting::ensureSchemaExists();
+
         $restaurant = Auth::guard('restaurant')->user() ?? $request->user();
 
         if (!$restaurant || !$restaurant->is_active) {
@@ -110,6 +117,8 @@ class RestaurantSessionController extends Controller
                 'location_url' => $restaurant->location_url,
                 'description' => $restaurant->description,
                 'fixed_delivery_fee' => $restaurant->fixed_delivery_fee !== null ? round((float) $restaurant->fixed_delivery_fee, 2) : null,
+                'show_daily_kpis' => (bool) ($restaurant->show_daily_kpis ?? false),
+                'branding' => AppSetting::getBranding(),
             ],
         ]);
     }

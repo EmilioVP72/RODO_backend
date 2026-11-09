@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AppSetting;
 use App\Models\Restaurant;
 use App\Services\RestaurantCodeService;
 use Illuminate\Http\JsonResponse;
@@ -16,6 +17,8 @@ class AdminRestaurantController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        AppSetting::ensureSchemaExists();
+
         $search = trim((string) $request->query('search', ''));
         $status = $request->query('status', 'all');
         $profile = $request->query('profile', 'all');
@@ -58,6 +61,7 @@ class AdminRestaurantController extends Controller
                 'location_url' => $r->location_url,
                 'description' => $r->description,
                 'fixed_delivery_fee' => $r->fixed_delivery_fee !== null ? round((float) $r->fixed_delivery_fee, 2) : null,
+                'show_daily_kpis' => (bool) ($r->show_daily_kpis ?? false),
                 'is_active' => (bool) $r->is_active,
                 'orders_count' => (int) ($r->orders_count ?? 0),
                 'rider_requests_count' => (int) ($r->rider_requests_count ?? 0),
@@ -79,6 +83,8 @@ class AdminRestaurantController extends Controller
      */
     public function store(Request $request, RestaurantCodeService $codeService): JsonResponse
     {
+        AppSetting::ensureSchemaExists();
+
         $validated = $request->validate([
             'name' => [
                 'required',
@@ -96,6 +102,7 @@ class AdminRestaurantController extends Controller
             'location_url' => ['nullable', 'string', 'max:2000'],
             'description' => ['nullable', 'string', 'max:2000'],
             'fixed_delivery_fee' => ['nullable', 'numeric', 'min:0', 'max:5000'],
+            'show_daily_kpis' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
         ], [
             'name.required' => 'El nombre del restaurante es obligatorio.',
@@ -113,6 +120,7 @@ class AdminRestaurantController extends Controller
                 'location_url' => !empty($validated['location_url']) ? trim($validated['location_url']) : null,
                 'description' => !empty($validated['description']) ? trim($validated['description']) : null,
                 'fixed_delivery_fee' => $fixedFee,
+                'show_daily_kpis' => (bool) ($validated['show_daily_kpis'] ?? false),
                 'is_active' => $validated['is_active'] ?? true,
             ]);
 
@@ -127,6 +135,7 @@ class AdminRestaurantController extends Controller
                     'location_url' => $restaurant->location_url,
                     'description' => $restaurant->description,
                     'fixed_delivery_fee' => $restaurant->fixed_delivery_fee !== null ? round((float) $restaurant->fixed_delivery_fee, 2) : null,
+                    'show_daily_kpis' => (bool) ($restaurant->show_daily_kpis ?? false),
                     'is_active' => (bool) $restaurant->is_active,
                     'orders_count' => 0,
                     'rider_requests_count' => 0,
@@ -154,6 +163,8 @@ class AdminRestaurantController extends Controller
      */
     public function update(Request $request, Restaurant $restaurant): JsonResponse
     {
+        AppSetting::ensureSchemaExists();
+
         $validated = $request->validate([
             'name' => [
                 'sometimes',
@@ -175,6 +186,7 @@ class AdminRestaurantController extends Controller
             'location_url' => ['nullable', 'string', 'max:2000'],
             'description' => ['nullable', 'string', 'max:2000'],
             'fixed_delivery_fee' => ['nullable', 'numeric', 'min:0', 'max:5000'],
+            'show_daily_kpis' => ['sometimes', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],
         ], [
             'name.required' => 'El nombre del restaurante es obligatorio.',
@@ -200,6 +212,9 @@ class AdminRestaurantController extends Controller
                 ? round((float) $val, 2)
                 : null;
         }
+        if (array_key_exists('show_daily_kpis', $validated)) {
+            $restaurant->show_daily_kpis = (bool) $validated['show_daily_kpis'];
+        }
         if (array_key_exists('is_active', $validated)) {
             $restaurant->is_active = (bool) $validated['is_active'];
         }
@@ -219,6 +234,7 @@ class AdminRestaurantController extends Controller
                 'location_url' => $restaurant->location_url,
                 'description' => $restaurant->description,
                 'fixed_delivery_fee' => $restaurant->fixed_delivery_fee !== null ? round((float) $restaurant->fixed_delivery_fee, 2) : null,
+                'show_daily_kpis' => (bool) ($restaurant->show_daily_kpis ?? false),
                 'is_active' => (bool) $restaurant->is_active,
                 'orders_count' => (int) ($restaurant->orders_count ?? 0),
                 'rider_requests_count' => (int) ($restaurant->rider_requests_count ?? 0),

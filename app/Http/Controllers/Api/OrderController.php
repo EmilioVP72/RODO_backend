@@ -324,10 +324,12 @@ class OrderController extends Controller
             'message' => 'Pedidos del día obtenidos correctamente.',
             'data' => [
                 'date' => $nowMx->toDateString(),
+                'show_daily_kpis' => (bool) ($restaurant->show_daily_kpis ?? false),
                 'restaurant' => [
                     'id' => $restaurant->id,
                     'name' => $restaurant->name,
                     'code' => $restaurant->code,
+                    'show_daily_kpis' => (bool) ($restaurant->show_daily_kpis ?? false),
                 ],
                 'summary' => [
                     'total_orders' => $totalOrders,

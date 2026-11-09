@@ -17,11 +17,13 @@ class Restaurant extends Authenticatable
         'location_url',
         'description',
         'fixed_delivery_fee',
+        'show_daily_kpis',
         'is_active',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'show_daily_kpis' => 'boolean',
         'fixed_delivery_fee' => 'float',
     ];
 
