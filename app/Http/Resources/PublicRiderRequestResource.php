@@ -17,6 +17,7 @@ class PublicRiderRequestResource extends JsonResource
         return [
             'folio' => $this->folio,
             'riders_count' => (int) $this->riders_count,
+            'zones' => is_array($this->zones) ? array_values($this->zones) : [],
             'note' => $this->note,
             'status' => $this->status,
             'created_at' => $this->created_at?->toIso8601String(),

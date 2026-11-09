@@ -318,6 +318,7 @@ class OrderController extends Controller
 
         $completedCount = $formattedOrders->filter(fn ($o) => in_array($o['status'], ['completed', 'delivered'], true))->count();
         $totalOrders = $formattedOrders->count();
+        $riderUsage = RiderRequestController::getDailyUsageForRestaurant($restaurant);
 
         return response()->json([
             'success' => true,
@@ -325,6 +326,7 @@ class OrderController extends Controller
             'data' => [
                 'date' => $nowMx->toDateString(),
                 'show_daily_kpis' => (bool) ($restaurant->show_daily_kpis ?? false),
+                'rider_requests_usage' => $riderUsage,
                 'restaurant' => [
                     'id' => $restaurant->id,
                     'name' => $restaurant->name,

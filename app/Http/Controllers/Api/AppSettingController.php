@@ -59,3 +59,4 @@ class AppSettingController extends Controller
         ]);
     }
 }
+

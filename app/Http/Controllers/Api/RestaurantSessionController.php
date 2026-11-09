@@ -85,6 +85,7 @@ class RestaurantSessionController extends Controller
                 'description' => $restaurant->description,
                 'fixed_delivery_fee' => $restaurant->fixed_delivery_fee !== null ? round((float) $restaurant->fixed_delivery_fee, 2) : null,
                 'show_daily_kpis' => (bool) ($restaurant->show_daily_kpis ?? false),
+                'rider_requests_usage' => RiderRequestController::getDailyUsageForRestaurant($restaurant),
                 'branding' => AppSetting::getBranding(),
                 'token' => $token,
             ],
@@ -118,6 +119,7 @@ class RestaurantSessionController extends Controller
                 'description' => $restaurant->description,
                 'fixed_delivery_fee' => $restaurant->fixed_delivery_fee !== null ? round((float) $restaurant->fixed_delivery_fee, 2) : null,
                 'show_daily_kpis' => (bool) ($restaurant->show_daily_kpis ?? false),
+                'rider_requests_usage' => RiderRequestController::getDailyUsageForRestaurant($restaurant),
                 'branding' => AppSetting::getBranding(),
             ],
         ]);

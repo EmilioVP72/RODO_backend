@@ -34,6 +34,12 @@ class AppSetting extends Model
                     $table->boolean('show_daily_kpis')->default(false);
                 });
             }
+
+            if (Schema::hasTable('rider_requests') && !Schema::hasColumn('rider_requests', 'zones')) {
+                Schema::table('rider_requests', function (Blueprint $table) {
+                    $table->json('zones')->nullable();
+                });
+            }
         } catch (\Throwable $e) {
             // Ignorar de forma segura si el usuario de BD no tiene permisos DDL o en concurrencia
         }
@@ -62,3 +68,4 @@ class AppSetting extends Model
         }
     }
 }
+

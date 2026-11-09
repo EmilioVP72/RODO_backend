@@ -11,6 +11,7 @@ class RiderRequest extends Model
         'folio',
         'public_token',
         'riders_count',
+        'zones',
         'note',
         'status',
     ];
@@ -21,6 +22,7 @@ class RiderRequest extends Model
 
     protected $casts = [
         'riders_count' => 'integer',
+        'zones' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
