@@ -150,10 +150,17 @@ class AdminRestaurantController extends Controller
                 'message' => $e->getMessage(),
                 'errors' => ['name' => [$e->getMessage()]],
             ], 422);
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Illuminate\Support\Facades\Log::error('Error de base de datos al crear restaurante: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error en la base de datos al registrar el restaurante. Asegúrate de haber ejecutado las migraciones.',
+                'error_detail' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
         } catch (\RuntimeException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'No hay códigos de 3 dígitos disponibles en este momento.',
+                'message' => $e->getMessage() ?: 'No hay códigos de 3 dígitos disponibles en este momento.',
             ], 503);
         }
     }
