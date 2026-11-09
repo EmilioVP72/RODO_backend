@@ -156,4 +156,74 @@ class RiderRequestController extends Controller
             ->response()
             ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
     }
+
+    /**
+     * Marcar una solicitud pública de repartidores como completada desde el ticket o desde el panel Admin.
+     */
+    public function completePublic(string $token): JsonResponse
+    {
+        AppSetting::ensureSchemaExists();
+
+        $riderRequest = RiderRequest::with('restaurant')
+            ->where('public_token', $token)
+            ->first();
+
+        if (! $riderRequest) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Solicitud de repartidores no encontrada.',
+            ], 404);
+        }
+
+        if ($riderRequest->status !== 'completed') {
+            $riderRequest->status = 'completed';
+            $riderRequest->save();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'La solicitud de repartidores ha sido marcada como completada.',
+            'data' => new PublicRiderRequestResource($riderRequest),
+        ], 200, [
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+        ]);
+    }
+
+    /**
+     * Actualizar el estatus de una solicitud de repartidores desde el CRUD de Administración.
+     */
+    public function updateStatusAdmin(Request $request, RiderRequest $riderRequest): JsonResponse
+    {
+        AppSetting::ensureSchemaExists();
+
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'in:pending,assigned,completed,cancelled'],
+        ]);
+
+        $riderRequest->status = $validated['status'];
+        $riderRequest->save();
+        $riderRequest->load('restaurant');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Estado de la solicitud de repartidores actualizado.',
+            'data' => new PublicRiderRequestResource($riderRequest),
+        ]);
+    }
+
+    /**
+     * Eliminar una solicitud de repartidores desde el CRUD de Administración.
+     */
+    public function destroyAdmin(RiderRequest $riderRequest): JsonResponse
+    {
+        AppSetting::ensureSchemaExists();
+
+        $folio = $riderRequest->folio;
+        $riderRequest->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Solicitud {$folio} eliminada correctamente.",
+        ]);
+    }
 }

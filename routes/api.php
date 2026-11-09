@@ -38,6 +38,16 @@ Route::prefix('v1')->group(function () {
         'showPublic',
     ])->middleware('throttle:60,1');
 
+    Route::post('/rider-requests/{token}/complete', [
+        RiderRequestController::class,
+        'completePublic',
+    ])->middleware('throttle:30,1');
+
+    Route::patch('/rider-requests/{token}/complete', [
+        RiderRequestController::class,
+        'completePublic',
+    ])->middleware('throttle:30,1');
+
     Route::post('/restaurant/login', [
         RestaurantSessionController::class,
         'login',
@@ -118,6 +128,16 @@ Route::prefix('v1')->group(function () {
         Route::post('/settings/branding', [
             AppSettingController::class,
             'updateBranding',
+        ]);
+
+        Route::patch('/rider-requests/{riderRequest}/status', [
+            RiderRequestController::class,
+            'updateStatusAdmin',
+        ]);
+
+        Route::delete('/rider-requests/{riderRequest}', [
+            RiderRequestController::class,
+            'destroyAdmin',
         ]);
 
     });

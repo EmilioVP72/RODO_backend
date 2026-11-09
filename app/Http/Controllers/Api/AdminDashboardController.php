@@ -69,9 +69,9 @@ class AdminDashboardController extends Controller
                 break;
         }
 
-        // Consulta base de pedidos
+        // Consulta base de pedidos y solicitudes rápidas de repartidores
         $ordersQuery = Order::with('restaurant:id,name,code,photo_url,is_active');
-        $riderRequestsQuery = RiderRequest::query();
+        $riderRequestsQuery = RiderRequest::with('restaurant:id,name,code,photo_url,is_active');
 
         if ($startDate && $endDate) {
             $ordersQuery->whereBetween('created_at', [$startDate, $endDate]);
@@ -96,7 +96,7 @@ class AdminDashboardController extends Controller
         }
 
         $orders = $ordersQuery->orderByDesc('created_at')->get();
-        $riderRequests = $riderRequestsQuery->get();
+        $riderRequests = $riderRequestsQuery->orderByDesc('created_at')->get();
 
         // Periodo anterior para comparativa porcentual
         $prevOrdersCount = 0;
@@ -149,6 +149,8 @@ class AdminDashboardController extends Controller
         // Estadísticas de solicitudes rápidas de repartidores
         $totalRiderRequests = $riderRequests->count();
         $totalRidersRequested = (int) $riderRequests->sum('riders_count');
+        $riderRequestsCompletedCount = $riderRequests->where('status', 'completed')->count();
+        $riderRequestsPendingCount = $riderRequests->whereNotIn('status', ['completed', 'cancelled'])->count();
 
         // 1. Gráfica de evolución diaria
         $dailyTrend = [];
@@ -300,6 +302,28 @@ class AdminDashboardController extends Controller
             ];
         })->values()->all();
 
+        // 8. Solicitudes rápidas de repartidores (Módulo secundario)
+        $recentRiderRequests = $riderRequests->take(100)->map(function ($req) use ($frontendUrl) {
+            return [
+                'id' => $req->id,
+                'folio' => $req->folio,
+                'public_token' => $req->public_token,
+                'request_url' => "{$frontendUrl}/solicitud/{$req->public_token}",
+                'riders_count' => (int) $req->riders_count,
+                'zones' => is_array($req->zones) ? array_values($req->zones) : [],
+                'note' => $req->note,
+                'status' => $req->status ?: 'pending',
+                'created_at' => $req->created_at?->toIso8601String(),
+                'updated_at' => $req->updated_at?->toIso8601String(),
+                'restaurant' => [
+                    'id' => $req->restaurant?->id,
+                    'name' => $req->restaurant?->name ?? 'Restaurante',
+                    'code' => $req->restaurant?->code ?? '---',
+                    'photo_url' => $req->restaurant?->photo_url,
+                ],
+            ];
+        })->values()->all();
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -323,6 +347,8 @@ class AdminDashboardController extends Controller
                     'restaurants_with_complete_profile' => $restaurantsWithCompleteProfile,
                     'total_rider_requests' => $totalRiderRequests,
                     'total_riders_requested' => $totalRidersRequested,
+                    'rider_requests_completed_count' => $riderRequestsCompletedCount,
+                    'rider_requests_pending_count' => $riderRequestsPendingCount,
                 ],
                 'charts' => [
                     'daily_trend' => $dailyTrend,
@@ -333,6 +359,7 @@ class AdminDashboardController extends Controller
                     'distance_ranges' => $distanceRanges,
                 ],
                 'recent_orders' => $recentOrders,
+                'recent_rider_requests' => $recentRiderRequests,
                 'restaurants_list' => $allRestaurants->map(fn ($r) => [
                     'id' => $r->id,
                     'name' => $r->name,
